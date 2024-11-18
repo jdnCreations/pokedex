@@ -8,6 +8,9 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
+
+	"github.com/jdnCreations/pokedex/internal/pokecache"
 )
 
 type cliCommand struct {
@@ -33,10 +36,14 @@ type LocationAreaResponse struct {
 	Results []LocationResult `json:"results"`
 }
 
+var cache *pokecache.Cache
+
 
 
 func main() {
 	config := &Config{}
+	interval := time.Duration(5 * time.Minute)
+	cache, _ = pokecache.NewCache(interval)
 
 	scanner := bufio.NewScanner(os.Stdin)
 
@@ -79,6 +86,7 @@ func commandExit(cfg *Config) error {
 }
 
 func commandMap(cfg *Config) error {
+	
 	var loc LocationAreaResponse
 	var url string
 
@@ -87,20 +95,27 @@ func commandMap(cfg *Config) error {
 	} else {
 		url = *cfg.Next
 	}
-	res, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-
-	defer res.Body.Close()
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return err
-	}
-
-	err = json.Unmarshal(body, &loc)
-	if err != nil {
-		return err
+	data, found := cache.Get(url)
+	if !found {
+		res, err := http.Get(url)
+		if err != nil {
+			return err
+		}
+		defer res.Body.Close()
+		body, err := io.ReadAll(res.Body)
+		if err != nil {
+			return err
+		}
+		cache.Add(url, body)
+		err = json.Unmarshal(body, &loc)
+		if err != nil {
+			return err
+		}
+	} else {
+		err := json.Unmarshal(data, &loc)
+		if err != nil {
+			return err
+		}
 	}
 
 	for _, result := range loc.Results {
@@ -116,25 +131,32 @@ func commandMap(cfg *Config) error {
 
 func commandMapb(cfg *Config) error {
 	var loc LocationAreaResponse
-
+	
 	if cfg.Previous == nil {
 		return fmt.Errorf("you're already on the first page")
 	}
 
-	res, err := http.Get(*cfg.Previous)
-	if err != nil {
-		return err
-	}
-
-	defer res.Body.Close()
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return err
-	}
-
-	err = json.Unmarshal(body, &loc)
-	if err != nil {
-		return err
+	data, found := cache.Get(*cfg.Previous)
+	if !found {
+		res, err := http.Get(*cfg.Previous)
+		if err != nil {
+			return err
+		}
+		defer res.Body.Close()
+		body, err := io.ReadAll(res.Body)
+		if err != nil {
+			return err
+		}
+		cache.Add(*cfg.Previous, body)
+		err = json.Unmarshal(body, &loc)
+		if err != nil {
+			return err
+		}
+	} else {
+		err := json.Unmarshal(data, &loc)
+		if err != nil {
+			return err
+		}
 	}
 
 	for _, result := range loc.Results {
