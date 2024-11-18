@@ -16,7 +16,7 @@ import (
 type cliCommand struct {
 	name string
 	description string
-	callback func(*Config) error
+	callback func(*Config, string) error
 }
 
 type LocationResult struct {
@@ -34,6 +34,20 @@ type LocationAreaResponse struct {
 	Next *string `json:"next"`
 	Previous *string `json:"previous"` 
 	Results []LocationResult `json:"results"`
+}
+
+type Pokemon struct {
+	Name string `json:"name"`
+	URL string `json:"url"`
+}
+
+type PokemonEncounter struct {
+	Pokemon Pokemon
+	_ []any
+}
+
+type SingleAreaResponse struct {
+	PokemonEncounters []PokemonEncounter `json:"pokemon_encounters"`
 }
 
 var cache *pokecache.Cache
@@ -56,10 +70,15 @@ func main() {
 			continue
 		}
 
+		var commandParams string
+
 		commandName := words[0]
+		if len(words) > 1 {
+			commandParams = words[1]
+		}
 
 		if cmd, exists := getCommands()[commandName]; exists {
-			if err := cmd.callback(config); err != nil {
+			if err := cmd.callback(config, commandParams); err != nil {
 				fmt.Println("Error:", err)
 			}
 		} else {
@@ -68,7 +87,7 @@ func main() {
 	}
 }
 
-func commandHelp(cfg *Config) error {
+func commandHelp(cfg *Config, _ string) error {
 	fmt.Println()
 	fmt.Printf("Welcome to the Pokedex!\n")
 	fmt.Printf("Usage: \n\n")
@@ -80,12 +99,12 @@ func commandHelp(cfg *Config) error {
 	return nil
 }
 
-func commandExit(cfg *Config) error {
+func commandExit(cfg *Config,_ string) error {
 	os.Exit(0)
 	return nil
 }
 
-func commandMap(cfg *Config) error {
+func commandMap(cfg *Config, _ string) error {
 	
 	var loc LocationAreaResponse
 	var url string
@@ -129,7 +148,7 @@ func commandMap(cfg *Config) error {
 
 }
 
-func commandMapb(cfg *Config) error {
+func commandMapb(cfg *Config, _ string) error {
 	var loc LocationAreaResponse
 	
 	if cfg.Previous == nil {
@@ -170,6 +189,52 @@ func commandMapb(cfg *Config) error {
 
 }
 
+func commandExplore(cfg *Config, area string) error {
+	if area == "" {
+		return fmt.Errorf("you did not provide an area")
+	}
+
+	var areaInfo SingleAreaResponse
+
+	url := "https://pokeapi.co/api/v2/location-area/"
+
+	data, found := cache.Get("area")
+	if !found {
+		res, err := http.Get(url + area)
+		if res.StatusCode == 404 {
+			return fmt.Errorf("no such area exists")
+		}
+		if err != nil {
+			return err
+		}
+		defer res.Body.Close()
+
+		body, err := io.ReadAll(res.Body)
+		if err != nil {
+			return err
+		}
+		
+		cache.Add(url+area, body)
+		err = json.Unmarshal(body, &areaInfo)
+		if err != nil {
+			return err
+		}
+	} else {
+		err := json.Unmarshal(data, &areaInfo)
+		if err != nil {
+			return err
+		}
+	}
+
+	fmt.Printf("Exploring %s...\n", area)
+	fmt.Println("Found Pokemon:")
+	for _, encounter := range areaInfo.PokemonEncounters {
+		fmt.Println(encounter.Pokemon.Name)
+	}
+
+	return nil
+}
+
 func cleanInput(text string) []string {
 	output := strings.ToLower(text)
 	words := strings.Fields(output)
@@ -197,6 +262,11 @@ func getCommands() map[string]cliCommand {
 			name: "mapb",
 			description: "Displays names of the 20 previous location areas in the Pokemon world",
 			callback: commandMapb,
+		},
+		"explore": {
+			name: "explore",
+			description: "Displays names of pokemon in the area",
+			callback: commandExplore,
 		},
 	}
 }
