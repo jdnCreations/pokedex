@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-func commandMapb(cfg *Config, _ string) error {
+func commandMapb(cfg *Config, _ string, _ Pokedex) error {
 	var loc LocationAreaResponse
 	
 	if cfg.Previous == nil {

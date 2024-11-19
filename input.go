@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-func handleInput(input string, config *Config) {
+func handleInput(input string, config *Config, pokedex Pokedex) {
   words := cleanInput(input)
 		if len(words) == 0 {
 			return
@@ -19,7 +19,7 @@ func handleInput(input string, config *Config) {
 		}
 
 		if cmd, exists := getCommands()[commandName]; exists {
-			if err := cmd.callback(config, commandParams); err != nil {
+			if err := cmd.callback(config, commandParams, pokedex); err != nil {
 				fmt.Println("Error:", err)
 			}
 		} else {

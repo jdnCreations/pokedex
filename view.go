@@ -2,17 +2,17 @@ package main
 
 import "fmt"
 
-func commandViewPokedex(_ *Config, _ string) error {
-  viewPokedex()
+func commandPokedex(_ *Config, _ string, pokedex Pokedex) error {
+  viewPokedex(pokedex)
   return nil
 }
 
 
-func viewPokedex() {
+func viewPokedex(pokedex Pokedex) {
   if len(pokedex.Pokedex) > 0 {
+		fmt.Println("Your Pokedex:")
     for _, pokemon := range pokedex.Pokedex {
-      fmt.Println(pokemon.Name)
+      fmt.Printf(" - %s\n", pokemon.Name)
     }
   }
-
 }

@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-func commandMap(cfg *Config, _ string) error {
+func commandMap(cfg *Config, _ string, _ Pokedex) error {
 	
 	var loc LocationAreaResponse
 	var url string

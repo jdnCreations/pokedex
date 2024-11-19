@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-func commandExplore(cfg *Config, area string) error {
+func commandExplore(cfg *Config, area string, _ Pokedex) error {
 	if area == "" {
 		return fmt.Errorf("you did not provide an area")
 	}

@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func commandCatch(cfg *Config, pokemonName string) error {
+func commandCatch(cfg *Config, pokemonName string, pokedex Pokedex) error {
   if pokemonName == "" {
     return fmt.Errorf("you didn't provide a pokemon")
   }

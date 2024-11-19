@@ -3,7 +3,7 @@ package main
 type cliCommand struct {
 	name string
 	description string
-	callback func(*Config, string) error
+	callback func(*Config, string, Pokedex) error
 }
 
 type Pokedex struct {
@@ -15,21 +15,24 @@ type StatInfo struct {
 }
 
 type Stat struct {
-  BaseStat string `json:"base_stat"`
+  BaseStat int `json:"base_stat"`
   StatInfo StatInfo `json:"stat"`
 }
 
-type Type struct {
-  Name string `json:"name"`
+type PokemonType struct {
+	Type struct {
+		Name string `json:"name"`
+	} `json:"type"`
 }
+
 
 type Pokemon struct {
   Name string `json:"name"`
   BaseExperience int `json:"base_experience"`
   Height int `json:"height"`
   Weight int `json:"weight"`
-  // Stats []Stat
-  // Types []Type
+  Stats []Stat `json:"stats"`
+  PokemonTypes []PokemonType `json:"types"`
 }
 
 type LocationResult struct {
