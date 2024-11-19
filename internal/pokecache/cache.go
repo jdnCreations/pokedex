@@ -16,12 +16,11 @@ type CacheEntry struct {
 	val []byte
 }
 
-func NewCache(interval time.Duration) (*Cache, chan struct{}) {
+func NewCache(interval time.Duration) *Cache {
 	ent := make(map[string]CacheEntry) 
 	cache := Cache{entries: ent}
-  stop := make(chan struct{})
-  go cache.reapLoop(interval, stop)
-	return &cache, stop
+  go cache.reapLoop(interval)
+	return &cache
 }
 
 func (c *Cache) Add(key string, val []byte) {
@@ -41,23 +40,23 @@ func (c *Cache) Get(key string) ([]byte, bool) {
 	return entry.val, true
 }
 
-func (c *Cache) reapLoop(interval time.Duration, stop chan struct{}) {
+func (c *Cache) reapLoop(interval time.Duration) {
   ticker := time.NewTicker(interval)
   defer ticker.Stop()
 
-  for {
-    select {
-    case <-ticker.C:
-      c.mu.Lock()
-      for key, entry := range c.entries {
-        if time.Since(entry.createdAt) > interval {
-          fmt.Println("REMOVED AN ENTRY")
-          delete(c.entries, key)
-        }
-      }
-      c.mu.Unlock()
-    case <-stop:
-      return
-    }
+  for range ticker.C {
+		c.mu.Lock()
+		for key, entry := range c.entries {
+			if time.Since(entry.createdAt) > interval {
+				fmt.Println("REMOVED AN ENTRY")
+				delete(c.entries, key)
+			}
+		}
+		c.mu.Unlock()
   }
+}
+
+
+func InitializeCache(duration time.Duration) *Cache {
+	return NewCache(duration)
 }
